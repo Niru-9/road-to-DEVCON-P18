@@ -1,0 +1,37 @@
+{
+  "name": "p3-bioscope",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Bioscope: peek at the first frame free, drop one small testnet coin to unlock the whole reel, and never pay twice for a reel you have already watched.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "start": "tsx --env-file-if-exists=.env src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "check:browser-js": "tsc --noEmit --allowJs --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom public/bioscope-core.js public/bioscope-app.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "scan:credentials": "tsx scripts/credential-scan.ts",
+    "verify": "npm run typecheck && npm run check:browser-js && npm run scan:credentials && npm test"
+  },
+  "dependencies": {
+    "@x402/core": "^2.27.0",
+    "@x402/evm": "^2.27.0",
+    "@x402/express": "^2.27.0",
+    "@x402/extensions": "^2.27.0",
+    "express": "^4.21.2",
+    "viem": "^2.48.11",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  }
+}

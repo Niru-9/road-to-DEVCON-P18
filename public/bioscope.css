@@ -1,0 +1,702 @@
+/*
+ * bioscope.css — a projection booth, not an app.
+ *
+ * ## The direction
+ *
+ * The subject is a hand-cranked film viewer in a brass box, so the page is built
+ * like the label on a film can: warm paper, ink, one brass accent, and small-caps
+ * stencil lettering for anything technical. The frames themselves are geometric SVG
+ * placeholders, so the interface does not try to out-shout them — the page is quiet,
+ * typographic, and lets the reel be the only thing with colour in it.
+ *
+ * ## The constraints that shaped it
+ *
+ * - **No webfonts, no network.** The demo has to work with the machine unplugged, so
+ *   the type stack is system faces. The display serif is a Palatino-line stack
+ *   because an archival label wants an old-style serif; the technical lettering is a
+ *   mono because film canisters are stencilled in mono. Body copy is the serif too —
+ *   the mono is a *label* face here, not a body face, which is the difference between
+ *   using it deliberately and reaching for it as a shortcut.
+ * - **Hierarchy in grayscale.** Every state below is legible with colour removed:
+ *   borders, rules, weight and spacing carry the structure; the brass and the green
+ *   only confirm it.
+ * - **One accent, used twice.** Brass for "the thing you can do", green for "this is
+ *   yours". Nothing else is coloured, so a coloured thing always means something.
+ *
+ * Keyboard and assistive technology are handled here rather than in JS: visible
+ * focus on everything, a skip link, a `prefers-reduced-motion` branch that removes
+ * the frame cross-fade and the auto-advance animation, and no hover-only affordance.
+ */
+
+:root {
+  /* Warm paper, tinted rather than pure. Ink is warm-black, never #000. */
+  --paper: oklch(96.5% 0.012 85);
+  --paper-deep: oklch(93% 0.018 82);
+  --ink: oklch(22% 0.015 60);
+  --ink-soft: oklch(42% 0.014 65);
+  --ink-faint: oklch(58% 0.012 70);
+  --rule: oklch(84% 0.016 80);
+  --rule-strong: oklch(70% 0.02 78);
+
+  /* The brass box, and the shutter that says "yours". */
+  --brass: oklch(62% 0.13 68);
+  --brass-deep: oklch(48% 0.11 62);
+  --brass-wash: oklch(93% 0.05 80);
+  --shutter: oklch(52% 0.09 155);
+  --shutter-wash: oklch(93% 0.035 155);
+  --alarm: oklch(48% 0.15 25);
+  --alarm-wash: oklch(94% 0.04 30);
+
+  /* The film gate: the darkest thing on the page, so the frame reads as projected. */
+  --gate: oklch(18% 0.012 70);
+  --gate-edge: oklch(26% 0.014 70);
+  --sprocket: oklch(88% 0.03 85);
+
+  --measure: 34rem;
+  --page: 76rem;
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --mono: "SFMono-Regular", "Cascadia Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
+
+  --step--1: clamp(0.78rem, 0.76rem + 0.1vw, 0.84rem);
+  --step-0: clamp(0.95rem, 0.92rem + 0.15vw, 1.05rem);
+  --step-1: clamp(1.15rem, 1.05rem + 0.5vw, 1.4rem);
+  --step-2: clamp(1.5rem, 1.3rem + 1vw, 2.1rem);
+  --step-3: clamp(2.1rem, 1.6rem + 2.6vw, 3.6rem);
+}
+
+/* --- reset-ish, only what is actually needed ------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  /* A faint laid-paper texture, from two gradients. No image, no network. */
+  background-image:
+    repeating-linear-gradient(90deg, oklch(0% 0 0 / 0.014) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--paper) 0%, var(--paper-deep) 100%);
+  background-attachment: fixed;
+  -webkit-text-size-adjust: 100%;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+code,
+kbd,
+.mono {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  letter-spacing: 0.01em;
+}
+
+.mono {
+  color: var(--ink-soft);
+}
+
+/* --- focus: visible, thick, and never removed ------------------------------ */
+
+:focus-visible {
+  outline: 3px solid var(--brass-deep);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Older engines without :focus-visible still get a ring. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  padding: 0.75rem 1.25rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- masthead ------------------------------------------------------------- */
+
+.masthead {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: clamp(2.5rem, 7vh, 5rem) var(--gutter) 0;
+}
+
+.kicker {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--brass-deep);
+  margin-bottom: 1rem;
+}
+
+.masthead h1 {
+  font-size: var(--step-3);
+  letter-spacing: -0.015em;
+  /* Optical hang for the masthead's first letter against the rule below it. */
+  margin-left: -0.02em;
+}
+
+.standfirst {
+  max-width: var(--measure);
+  margin-top: 1.25rem;
+  font-size: var(--step-1);
+  line-height: 1.45;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+
+.identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.identity__line {
+  flex: 1 1 20rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* --- the truth about money ------------------------------------------------ */
+
+.mode {
+  max-width: var(--page);
+  margin: clamp(2rem, 5vh, 3.5rem) auto 0;
+  padding: 1.5rem var(--gutter) 1.75rem;
+  background: var(--paper-deep);
+  border-block: 1px solid var(--rule-strong);
+  /* One deliberate accent edge, on a full-bleed band — not a decorated card. */
+  box-shadow: inset 4px 0 0 var(--brass);
+}
+
+.mode[data-mode="testnet"] {
+  box-shadow: inset 4px 0 0 var(--shutter);
+}
+
+.mode__heading {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--brass-deep);
+}
+
+.mode[data-mode="testnet"] .mode__heading {
+  color: var(--shutter);
+}
+
+.mode__sentence {
+  max-width: var(--measure);
+  margin-top: 0.5rem;
+  font-size: var(--step-1);
+  line-height: 1.4;
+}
+
+.mode__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2.5rem;
+  margin: 1.25rem 0 0;
+  font-family: var(--mono);
+  font-size: var(--step--1);
+}
+
+.mode__facts div {
+  min-width: 0;
+}
+
+.mode__facts dt {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+}
+
+.mode__facts dd {
+  margin: 0.15rem 0 0;
+  color: var(--ink);
+}
+
+.mode__caveat {
+  max-width: var(--measure);
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--rule-strong);
+  font-size: var(--step--1);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+/* --- the cabinet ---------------------------------------------------------- */
+
+main {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vh, 4rem) var(--gutter);
+}
+
+.section-heading {
+  font-size: var(--step-2);
+  letter-spacing: -0.01em;
+}
+
+.section-note {
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+}
+
+.reels {
+  display: grid;
+  gap: 2.5rem 2rem;
+  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+}
+
+.reel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--rule-strong);
+}
+
+/* The free peek, in a shallow mount. Never a card: a hairline and air. */
+.reel__peek {
+  position: relative;
+  background: var(--gate);
+  border: 1px solid var(--gate-edge);
+  overflow: hidden;
+}
+
+.reel__peek img {
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
+}
+
+.reel__peek::after {
+  /* A "FREE PEEK" corner mark, in the page's own ink rather than baked into the
+     image, so it stays legible at any size and does not touch the generated art. */
+  content: "free peek";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 0.3rem 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--paper);
+  background: oklch(22% 0.015 60 / 0.82);
+}
+
+.reel__title {
+  font-size: var(--step-1);
+}
+
+.reel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.reel__blurb {
+  font-size: var(--step-0);
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+
+.reel__price {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink);
+}
+
+.reel__action {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.reel[data-state="owned"] {
+  border-top-color: var(--shutter);
+}
+
+.reel[data-state="signed-in"] .reel__state {
+  color: var(--shutter);
+}
+
+.reel__state {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+}
+
+/* --- buttons -------------------------------------------------------------- */
+
+.button {
+  --button-bg: transparent;
+  --button-ink: var(--ink);
+  --button-edge: var(--rule-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  /* 44px minimum target, per every accessibility guideline ever written. */
+  min-height: 2.75rem;
+  padding: 0.6rem 1.15rem;
+  border: 1px solid var(--button-edge);
+  border-radius: 2px;
+  background: var(--button-bg);
+  color: var(--button-ink);
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.button:hover:not(:disabled) {
+  --button-edge: var(--ink);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.button--primary {
+  --button-bg: var(--brass);
+  --button-ink: oklch(99% 0.005 85);
+  --button-edge: var(--brass-deep);
+  font-weight: 600;
+}
+
+.button--primary:hover:not(:disabled) {
+  --button-bg: var(--brass-deep);
+  --button-edge: var(--brass-deep);
+}
+
+.button--yours {
+  --button-bg: var(--shutter);
+  --button-ink: oklch(99% 0.005 150);
+  --button-edge: var(--shutter);
+  font-weight: 600;
+}
+
+.button--yours:hover:not(:disabled) {
+  --button-bg: oklch(44% 0.09 155);
+  --button-edge: oklch(44% 0.09 155);
+}
+
+.button--quiet {
+  --button-ink: var(--ink-soft);
+}
+
+.button--danger {
+  --button-ink: var(--alarm);
+  --button-edge: var(--alarm);
+}
+
+/* --- the gate: where a bought reel plays ----------------------------------- */
+
+.gate {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 var(--gutter) clamp(2.5rem, 6vh, 4rem);
+}
+
+.gate__body {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  margin-top: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 62rem) {
+  .gate__body {
+    /* The frame gets the room; the panel gets exactly what its text needs. */
+    grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 1fr);
+    align-items: start;
+  }
+}
+
+/* The film gate itself: dark, inset, with sprocket holes top and bottom. */
+.film {
+  margin: 0;
+  padding: 1.75rem 0;
+  background: var(--gate);
+  border: 1px solid var(--gate-edge);
+  background-image:
+    radial-gradient(circle at 1.1rem 50%, var(--sprocket) 0 0.42rem, transparent 0.43rem),
+    radial-gradient(circle at calc(100% - 1.1rem) 50%, var(--sprocket) 0 0.42rem, transparent 0.43rem);
+  background-size: 100% 1.15rem;
+  background-repeat: no-repeat;
+  background-position: top, bottom;
+  box-shadow: inset 0 0 0 0.5rem var(--gate), 0 1px 0 oklch(0% 0 0 / 0.12);
+}
+
+.film img {
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
+  background: var(--gate);
+  transition: opacity 180ms ease-out;
+}
+
+.film[data-loading="true"] img {
+  opacity: 0.45;
+}
+
+.film figcaption {
+  max-width: 42rem;
+  margin: 1rem auto 0;
+  padding: 0 1.5rem;
+  font-size: var(--step-1);
+  line-height: 1.4;
+  color: oklch(92% 0.02 85);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.gate__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.gate__title {
+  font-size: var(--step-1);
+}
+
+.gate__meta {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: var(--step--1);
+}
+
+.gate__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.counter {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+/* The frame strip: eight notches, the current one filled. Reads as a counter. */
+.strip {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.strip__notch {
+  flex: 1 1 0;
+  height: 0.55rem;
+  background: var(--rule);
+  border: 0;
+  padding: 0;
+  border-radius: 1px;
+}
+
+.strip__notch[data-kind="free"] {
+  background: var(--rule-strong);
+}
+
+.strip__notch[aria-current="true"] {
+  background: var(--brass-deep);
+}
+
+.status,
+.receipt {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  line-height: 1.5;
+  min-height: 1.5em;
+}
+
+.status {
+  color: var(--ink-soft);
+}
+
+.status[data-tone="working"] {
+  color: var(--brass-deep);
+}
+
+.status[data-tone="bad"] {
+  color: var(--alarm);
+}
+
+.receipt {
+  padding: 0.75rem;
+  background: var(--paper-deep);
+  border-left: 3px solid var(--rule-strong);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.receipt[data-tone="paid"] {
+  border-left-color: var(--brass-deep);
+  background: var(--brass-wash);
+}
+
+.receipt[data-tone="yours"] {
+  border-left-color: var(--shutter);
+  background: var(--shutter-wash);
+}
+
+.receipt:empty {
+  display: none;
+}
+
+.transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.shortcuts {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+}
+
+.shortcuts kbd {
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--rule-strong);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--paper-deep);
+}
+
+/* --- notices and colophon ------------------------------------------------- */
+
+.notice {
+  max-width: var(--measure);
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  background: var(--alarm-wash);
+  border-left: 3px solid var(--alarm);
+  font-size: var(--step-0);
+}
+
+.colophon {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 2rem var(--gutter) 3.5rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+  line-height: 1.6;
+}
+
+.colophon p {
+  max-width: var(--measure);
+}
+
+.colophon p + p {
+  margin-top: 0.75rem;
+}
+
+/* --- motion: only where it carries meaning, and never when asked not to ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .film img {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --ink: oklch(14% 0.01 60);
+    --ink-soft: oklch(28% 0.012 60);
+    --ink-faint: oklch(36% 0.012 65);
+    --rule: oklch(62% 0.02 78);
+    --rule-strong: oklch(44% 0.02 70);
+  }
+}
