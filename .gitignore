@@ -25,3 +25,11 @@ record/
 # a type declaration, with no build step and nothing generated. If a media file ever
 # appears there, `tests/ui-shell.test.ts` and `tests/private-media.test.ts` both fail,
 # which is the guard that matters; a line here would only hide the mistake.
+
+# --- internal documents, not part of the public tree ---
+# Internal design rationale. Kept on disk for the author; not part of the public tree.
+/ARCHITECTURE.md
+
+# --- internal documents, not part of the public tree ---
+# Internal build log. Kept on disk for the author; not part of the public tree.
+/P3_PLAN.md

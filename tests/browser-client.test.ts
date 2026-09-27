@@ -28,7 +28,7 @@
  *
  * The DOM half. `bioscope-app.js` renders, focuses and announces; it cannot be
  * exercised without a browser, and pretending otherwise with a fake DOM would test
- * the fake. Its untested surface is listed in `P3_PLAN.md` and the manual steps
+ * the fake. Its untested surface is listed in the README and the manual steps
  * in the T7 report.
  *
  * ## No credentials

@@ -44,7 +44,7 @@
  *
  * What is still not tested here: live testnet settlement. Every payment below is
  * settled by the local simulated facilitator, which contacts no chain. See the
- * T5 report and `P3_PLAN.md` for the line between what is verified and what is
+ * README for the line between what is verified and what is
  * merely wired.
  */
 
